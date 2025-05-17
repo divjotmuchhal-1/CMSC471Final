@@ -1,0 +1,164 @@
+/* Reset & base styling */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&display=swap');
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Roboto', sans-serif;
+}
+
+body {
+  background-color: #e0f7fa;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 2rem;
+}
+
+.slider-container {
+  margin: 20px auto;
+  width: 90%;
+  max-width: 800px;
+  text-align: center;
+}
+
+.slider-container label {
+  display: inline-block;
+  margin-bottom: 5px;
+  font-size: 1rem;
+  font-weight: bold;
+  background: #fff;
+  border: 2px solid #333;
+  padding: 2px 10px;
+}
+
+#slider svg .track,
+#daySlider svg .track {
+  stroke: #ccc;
+  stroke-width: 12;
+}
+
+#slider svg .track-inset,
+#daySlider svg .track-inset {
+  stroke: #f1f1f1;
+  stroke-width: 6;
+}
+
+#slider svg .handle,
+#daySlider svg .handle {
+  fill: #007acc;
+  stroke: #005a99;
+  stroke-width: 2px;
+}
+
+#slider svg .tick text,
+#daySlider svg .tick text {
+  fill: black;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+#slider svg,
+#daySlider svg {
+  display: block;
+  margin: 0 auto;
+}
+
+#controls {
+  margin: 20px auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+
+.control {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.control label {
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.variable,
+.location {
+  padding: 8px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+#vis {
+  margin: 30px auto;
+  background: #fff;
+  padding: 20px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+svg {
+  width: 100%;
+  height: auto;
+  border: 5px solid #090101;
+  background-color: #e1e2e5d5;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.x-axis path,
+.y-axis path,
+.x-axis line,
+.y-axis line {
+  stroke: #333;
+  shape-rendering: crispEdges;
+}
+
+.x-axis text,
+.y-axis text {
+  font-size: 12px;
+}
+
+.labels {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+#tooltip {
+  position: absolute;
+  padding: 10px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  pointer-events: none;
+  font-size: 12px;
+  z-index: 10;
+}
+
+.points.selected {
+  stroke: purple;
+  stroke-width: 6px;
+  fill: purple;
+}
+
+button {
+  background-color: white;
+  padding: 6px 12px;
+  font-size: 0.95rem;
+  border: 1px solid #aaa;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+button:hover {
+  background-color: #dff0f5;
+  border-color: #007acc;
+}
