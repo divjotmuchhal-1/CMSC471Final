@@ -1,16 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Weather snapshot &amp; climate variability</title>
-  <link rel="stylesheet" href="/css/style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weather Visualization</title>
+  <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
-  <div id="controls"></div>
-  <svg></svg>
-  <div id="tooltip"></div>
-
-  <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
-  <script src="/js/script.js" defer></script>
+  <div id="tooltip" style="position:absolute;display:none;padding:4px;background:#fff;border:1px solid #999;border-radius:3px;"></div>
+  
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://unpkg.com/d3-simple-slider"></script>
+  <script src="https://d3js.org/topojson.v3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.9.0/dist/tf.min.js"></script>
+  <script src="js/script.js"></script>
+  <script src="js/dashboard.js"></script>
+  
+  <nav>
+  <a href="visualization2/viz2.html" target="_blank">
+    View Additional Visualization
+  </a>
+</nav>
+  <section id="dashboard">
+    <h1>Tempest Trends - Climate Variability Dashboard</h1>
+    <div id="current-section">
+      <h2>Current Snapshot</h2>
+      <div id="current-map"></div>
+    </div>
+    <div id="year-section">
+      <h2>Yearly Trends</h2>
+      <div id="year-chart"></div>
+    </div>
+    <div id="future-section">
+      <h2>Future Forecast</h2>
+      <div id="future-chart"></div>
+    </div>
+  </section>
+  
+  
 </body>
 </html>

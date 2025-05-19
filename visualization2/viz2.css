@@ -6,7 +6,7 @@ body {
     height: 100vh;
   }
   
-  #controls {
+  #controls-viz {
     padding: 8px 12px;
     border-bottom: 1px solid #ccc;
     background: #f7f7f7;
@@ -14,7 +14,7 @@ body {
     white-space: nowrap;
   }
   
-  #controls button {
+  #controls-viz button {
     margin: 4px 4px;
     padding: 6px 10px;
     border: 1px solid #888;
@@ -24,7 +24,7 @@ body {
     font-size: 0.85rem;
   }
   
-  #controls button.active {
+  #controls-viz button.active {
     background: #4285f4;
     color: #fff;
   }
@@ -36,7 +36,7 @@ body {
     min-height: 400px;
   }
   
-  #tooltip {
+  #tooltip-viz {
     position: absolute;
     pointer-events: none;
     background: #fff;
