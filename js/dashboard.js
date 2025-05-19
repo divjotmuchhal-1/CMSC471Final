@@ -494,11 +494,12 @@ function drawForecast(histArr, forecastArr, σ) {
     .nice()
     .range([h - m.bottom, m.top]);
 
+  const forecastLen = forecastArr.length;
   svg.append("g")
   .attr("transform", `translate(0,${h-m.bottom})`)
   .call(d3.axisBottom(x)
     .ticks(10)
-    .tickFormat(d => d <= histArr.length ? `M${d}` : `+${d - histArr.length}`)
+    .tickFormat(d => d <= histArr.length ? `M${d}` : `+${forecastLen}`)
   )
   .selectAll("text")
     .attr("transform","rotate(-45)")

@@ -43,7 +43,4 @@ Since climate change is not measured yearly, but over several years, our visuali
            - Divjot was responsible for setting up the GitHub repo and creating the initial clones with initial skeletons for creation.
            - All 3 of us worked closely together, and communicated effectively to ensure timely completion of tasks. We all kept each other in the loop and detailed any issues or ideas we came up with during development. We all contributed well together as we have worked with each other for 3 total group projects now. We all made sure each other was on task.
 
-
-
-
 **Deployed App Link:** https://cmsc471final.onrender.com/
