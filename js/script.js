@@ -15,6 +15,15 @@ const colorScale = d3.scaleOrdinal()
   .domain(["East Coast", "Midwest", "Central", "Pacific", "Other"])
   .range(["#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00"]);
 
+/*
+  * Mapping of states to regions
+  * East Coast: ME, NH, VT, MA, RI, CT, NY, NJ, DE, MD, VA, NC, SC, GA, FL
+  * Midwest: OH, MI, IN, IL, WI, MO, IA, MN, KS, NE, SD, ND
+  * Central: TX, OK, AR, LA, MS, AL, KY, TN
+  * Pacific: WA, OR, CA, AK, HI
+  * Other: All other states
+  * This mapping is used to categorize the states into regions for visualization purposes.
+*/
 const stateToRegion = {
   "ME": "East Coast",
   "NH": "East Coast",

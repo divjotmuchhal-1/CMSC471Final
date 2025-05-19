@@ -1,7 +1,10 @@
-// js/dashboard.js
-// Full Climate Variability Dashboard (all temps in °F)
-
-// 1) FIPS → Postal
+/*
+  Convert FIPS codes to postal codes
+  - FIPS codes are 2-digit codes that identify US states and territories
+  - Postal codes are the 2-letter abbreviations for US states
+  - This mapping is used to convert FIPS codes to postal codes for display
+  - The mapping is based on the US Census Bureau's FIPS code
+*/
 const fipsToPostal = {
   "01":"AL","02":"AK","04":"AZ","05":"AR","06":"CA","08":"CO","09":"CT",
   "10":"DE","11":"DC","12":"FL","13":"GA","15":"HI","16":"ID","17":"IL",
@@ -13,6 +16,11 @@ const fipsToPostal = {
   "55":"WI","56":"WY"
 };
 
+
+/*
+  Convert state names to regions
+  - This mapping is used to group states by region for visualization
+*/
 const vars = [
   { key: "TAVG",  label: "Avg Temp (°F)"        },
   { key: "PRCP",  label: "Precipitation (inches)" },
@@ -20,13 +28,20 @@ const vars = [
   { key: "WDF5",  label: "Wind Direction (°)"    }
 ];
 
-// current selections
 let currentVar = vars[0].key;
 let yearlyVar = vars[0].key;
 
 let futureState;
 let kaggle;
-// 2) Load data & TopoJSON
+
+/*
+  Load data from CSV files and JSON file
+  - The data is loaded using d3.csv() and d3.json()
+  - The data is parsed using the parseRow() function
+  - The data is then used to draw the current map, yearly chart, and forecast
+  - The data is also used to create dropdowns for selecting the current variable,
+    yearly variable, and future state
+*/
 Promise.all([
   d3.csv("data/weather.csv", parseRow),
   d3.csv("data/average_monthly_temperature_by_state_1950-2022.csv"),
@@ -58,7 +73,7 @@ Promise.all([
     futureState,
     v => {
       futureState = v;
-      forecastForState(kaggle,futureState);    // re‐train & redraw for the newly selected state
+      forecastForState(kaggle,futureState);    
     }
   );
 
@@ -69,21 +84,25 @@ Promise.all([
       <input type="checkbox" id="future-tooltip-toggle" checked>
       Show markers &amp; tooltips
     `);
-
+  
+  // Draw the initial charts
   drawCurrent(data, features);
   drawYearly(data);
-  //trainAndForecast(kaggleData);
   forecastForState(kaggle, futureState);
 
 });
 
-
-// 3) Parse + convert TAVG to °F
+/*
+  parseRow(d):
+  - Parses a row of data from the CSV file
+  - Converts the date string to month and day integers
+  - Converts the TMIN and TMAX strings to numbers
+  - Calculates the average temperature (TAVG) from TMIN and TMAX
+  - Returns an object with the parsed data
+*/
 function parseRow(d) {
-  // if your raw TMIN/TMAX are in °C, convert to °F:  F = C*9/5 + 32
   const tmin = +d.TMIN,
         tmax = +d.TMAX;
-  // compute average and keep everything in °F
   const tavg = (tmin + tmax) / 2;
 
   return {
@@ -97,9 +116,19 @@ function parseRow(d) {
     WDF5:  +d.WDF5,
   };
 }
+
+/*
+  makeDropdown(container, id, options, initialKey, onChange):
+  - Creates a dropdown menu for selecting a variable
+  - `container`: the container element to insert the dropdown into
+  - `id`: the id of the dropdown
+  - `options`: the options for the dropdown
+  - `initialKey`: the initial selected value
+  - `onChange`: the function to call when the value changes
+*/
 function makeDropdown(container, id, options, initialKey, onChange) {
   const sel = d3.select(container)
-    .insert("select", "svg")      // put it just before the svg
+    .insert("select", "svg")      
     .attr("id", id)
     .style("margin","0 1em");
 
@@ -114,7 +143,14 @@ function makeDropdown(container, id, options, initialKey, onChange) {
     onChange(this.value);
   });
 }
-// 4) Current Snapshot: full-year average per state
+
+/*
+  drawCurrent(data, features):
+  - Renders a map of the US with states colored by the selected variable
+  - Uses D3.js to create the map and color the states
+  - Adds tooltips for each state showing the average value of the selected variable
+  - Adds a legend for the color scale
+*/
 function drawCurrent(data, features) {
   const w = 800, h = 500;
   const tooltip = d3.select("#tooltip");
@@ -133,10 +169,8 @@ function drawCurrent(data, features) {
     d => d.state
     );
   
-  // roll up across the entire dataset (all 365 days)  
   
 
-  // clamp our color scale at [min…100] °F
   const temps = Array.from(byState.values());
   const minT  = d3.min(temps);
   const maxT  = Math.min(d3.max(temps), 100);
@@ -144,7 +178,6 @@ function drawCurrent(data, features) {
     .domain([minT, maxT])
     .clamp(true);
 
-  // draw the map
   svg.append("g")
     .selectAll("path")
     .data(features)
@@ -169,7 +202,6 @@ function drawCurrent(data, features) {
       })
       .on("mouseout", () => tooltip.style("display", "none"));
 
-  // —— LEGEND (moved down slightly) —— //
   const legendWidth  = 300;
   const legendHeight = 8;
   const legendMargin = { top: 20, right: 20, bottom: 30, left: 20 };
@@ -218,13 +250,17 @@ function drawCurrent(data, features) {
       .style("font-size", "10px");
 }
 
-// 5) Yearly Trends
+/**
+ * drawYearly(data):
+ * Renders monthly mean trends by region for the selected variable.
+ * - Rolls up data to region → month means
+ * - Draws semi-transparent area + line + markers + tooltip interactions
+ */
 function drawYearly(data) {
   const w = 800,
         h = 400,
         margin = { top: 40, right: 120, bottom: 40, left: 130 };
 
-  // clear old chart
   d3.select("#year-chart").selectAll("*").remove();
 
   const tooltip = d3.select("#tooltip");
@@ -234,7 +270,6 @@ function drawYearly(data) {
       .attr("width", w)
       .attr("height", h);
 
-  // 1) roll up to region → month → mean TAVG
   const nested = d3.rollups(
     data,
     v => d3.mean(v, d => d[yearlyVar]),
@@ -242,9 +277,8 @@ function drawYearly(data) {
     d => d.month
   );
 
-  // 2) for each region, build a full 1–12 array, padding 11←Jan, 12←Feb
   const series = nested.map(([region, arr]) => {
-    const byMonth = new Map(arr);    // e.g. Map {1→32.1, 2→35.2, …9→68.4}
+    const byMonth = new Map(arr);    
     const janVal = byMonth.get(1);
     const febVal = byMonth.get(2);
 
@@ -255,7 +289,6 @@ function drawYearly(data) {
         if (m === 11)      v = janVal;
         else if (m === 12) v = febVal;
         else               v = d3.mean(arr, ([_,vv]) => vv); 
-        // fallback: use annual mean for any other missing
       }
       values.push({ month: m, value: v });
     }
@@ -263,7 +296,6 @@ function drawYearly(data) {
     return { region, values };
   });
 
-  // 3) scales
   const x = d3.scaleLinear()
     .domain([1, 12])
     .range([margin.left, w - margin.right]);
@@ -273,7 +305,6 @@ function drawYearly(data) {
     .nice()
     .range([h - margin.bottom, margin.top]);
 
-  // 4) axes
   svg.append("g")
     .attr("transform", `translate(0,${h - margin.bottom})`)
     .call(d3.axisBottom(x).ticks(12).tickFormat(d => `M${d}`));
@@ -283,7 +314,6 @@ function drawYearly(data) {
     .call(d3.axisLeft(y).tickFormat(d => d.toFixed(1) + " " + vars.find(v=>v.key===yearlyVar).label));
 
 
-  // 5) area + line
   const colorScale = d3.scaleOrdinal(d3.schemeCategory10)
     .domain(series.map(s => s.region));
 
@@ -337,7 +367,6 @@ function drawYearly(data) {
 
   });
 
-  // 6) legend
   const legend = svg.append("g")
     .attr("transform", `translate(${w - margin.right + 20},${margin.top})`);
 
@@ -356,129 +385,27 @@ function drawYearly(data) {
   });
 }
 
-// 6) trainAndForecast: simple RNN → 5-year forecast
-async function trainAndForecast(kaggleData) {
-  // A) compute U.S.-wide monthly mean (1950→2022)
-  const monthly = Array.from(
-    d3.rollups(
-      kaggleData,
-      v => d3.mean(v, d => +d.average_temp),
-      d => d.year + "-" + d.month.toString().padStart(2,"0")
-    ),
-    ([ym, val]) => ({ ym, value: val })
-  );
-  monthly.sort((a,b)=>new Date(a.ym+"-01") - new Date(b.ym+"-01"));
-
-  // B) sliding window: past 12 → next 1
-  const WINDOW = 12, xs = [], ys = [];
-  for (let i=0; i+WINDOW<monthly.length; i++){
-    xs.push(monthly.slice(i,i+WINDOW).map(d=>d.value));
-    ys.push(monthly[i+WINDOW].value);
-  }
-  const xT = tf.tensor2d(xs), yT = tf.tensor1d(ys);
-
-  // C) build & train
-  const model = tf.sequential();
-  model.add(tf.layers.dense({ units:50, inputShape:[WINDOW], activation:"relu" }));
-  model.add(tf.layers.dense({ units:1 }));
-  model.compile({ optimizer:"adam", loss:"meanSquaredError" });
-  await model.fit(xT, yT, { epochs:80, batchSize:32 });
-
-  // D) forecast 60 months
-  let window = monthly.slice(-WINDOW).map(d=>d.value);
-  const forecast = [];
-  for (let i=0; i<60; i++){
-    const pred = model.predict(tf.tensor2d([window],[1,WINDOW]))
-                     .dataSync()[0];
-    forecast.push({ t: monthly.length + i + 1, value: pred });
-    window.push(pred); window.shift();
-  }
-   const yPred = model.predict(xT).dataSync();
-  const resid = ys.map((y,i) => y - yPred[i]);
-  const σ     = Math.sqrt(d3.mean(resid.map(r => r*r)));
-
-  // D) roll‐forward your 60‐month forecast as before…
-  // let forecast = [ {t:…, value:…}, … ];
-
-  // E) draw the panel, now passing σ
-  drawForecast(
-    monthly.map((d,i) => ({ t: i+1,    value: d.value   })), 
-    forecast, 
-    σ
-  );
-}
-
-// 7) drawForecast: ribbon + line
-// 7) drawForecast: ribbon + lines
-/*
-function drawForecast(histArr, forecastArr, σ) {
-  const w = 800, h = 400;
-  const margin = { top:40, right:40, bottom:40, left:50 };
-
-  // clear & svg setup
-  d3.select("#future-chart").selectAll("*").remove();
-  const svg = d3.select("#future-chart")
-    .append("svg").attr("width",w).attr("height",h);
-
-  // scales over history + forecast
-  const all = histArr.concat(forecastArr);
-  const x = d3.scaleLinear().domain([1, all.length])
-              .range([margin.left, w - margin.right]);
-  const y = d3.scaleLinear().domain([0, d3.max(all,d=>d.value)]).nice()
-              .range([h - margin.bottom, margin.top]);
-
-  // axes
-  svg.append("g")
-    .attr("transform",`translate(0,${h-margin.bottom})`)
-    .call(d3.axisBottom(x)
-      .tickValues([1,12,24,36,48,60, all.length])
-      .tickFormat(d => d <= histArr.length
-        ? `M${d}` : `+${d - histArr.length}`));
-  svg.append("g")
-    .attr("transform",`translate(${margin.left},0)`)
-    .call(d3.axisLeft(y).tickFormat(d=>d.toFixed(1)+"°F"));
-
-  // 1σ ribbon around the forecast
-  const ribbonGen = d3.area()
-    .x(d => x(d.t))
-    .y0(d => y(d.value - σ))
-    .y1(d => y(d.value + σ));
-
-  svg.append("path")
-    .datum(forecastArr)
-    .attr("fill",    "#d62728")
-    .attr("opacity", 0.2)
-    .attr("d",       ribbonGen);
-
-  // historical line
-  const line = d3.line()
-    .x(d=>x(d.t))
-    .y(d=>y(d.value));
-
-  svg.append("path")
-    .datum(histArr)
-    .attr("fill","none")
-    .attr("stroke","#1f77b4")
-    .attr("stroke-width",2)
-    .attr("d", line);
-
-  // forecast dashed line
-  svg.append("path")
-    .datum(forecastArr)
-    .attr("fill","none")
-    .attr("stroke","#d62728")
-    .attr("stroke-width",2)
-    .style("stroke-dasharray","5,5")
-    .attr("d", line);
-}*/
+/**
+ * forecastForState(kaggleData, futureState):
+ * Trains a small MLP to forecast the next 60 months of average temperatures
+ * for `futureState` using the past 12 months as input. Then calls drawForecast().
+ * - `kaggleData`: the data from the Kaggle dataset
+ * - `futureState`: the state to forecast
+ * - `WINDOW`: the number of months to use as input for the model
+ * - `σ`: the standard deviation of the residuals
+ * - `xT`: the input tensor for the model
+ * - `yT`: the output tensor for the model
+ * - `model`: the trained model
+ * - `yPred`: the predicted values
+ * - `resid`: the residuals
+ * - `forecast`: the forecasted values
+ */
 
 async function forecastForState(kaggleData, futureState) {
   const WINDOW = 12;
 
-  // A) grab only rows for the selected state (capital “State” field)
   const stateRows = kaggleData.filter(d => d.state === futureState);
 
-  // B) compute monthly means keyed by "YYYY-MM"
   const monthly = Array.from(
     d3.rollups(
       stateRows,
@@ -487,39 +414,32 @@ async function forecastForState(kaggleData, futureState) {
     ),
     ([ym, value]) => ({ ym, value })
   )
-  // sort chronologically
   .sort((a, b) => new Date(a.ym + "-01") - new Date(b.ym + "-01"));
 
-  // need at least WINDOW+1 months to train
   if (monthly.length <= WINDOW) {
     console.warn(`Not enough data to forecast for ${futureState}`);
     return;
   }
 
-  // C) sliding window: past WINDOW → next month
   const xs = [], ys = [];
   for (let i = 0; i + WINDOW < monthly.length; i++) {
     xs.push(monthly.slice(i, i + WINDOW).map(d => d.value));
     ys.push(monthly[i + WINDOW].value);
   }
 
-  // D) build tensors with explicit shapes
   const xT = tf.tensor2d(xs, [xs.length, WINDOW]);
   const yT = tf.tensor1d(ys);
 
-  // E) define and train a tiny dense net
   const model = tf.sequential();
   model.add(tf.layers.dense({ units: 50, inputShape: [WINDOW], activation: "relu" }));
   model.add(tf.layers.dense({ units: 1 }));
   model.compile({ optimizer: "adam", loss: "meanSquaredError" });
   await model.fit(xT, yT, { epochs: 80, batchSize: 32 });
 
-  // F) compute σ of residuals
   const yPred = Array.from(model.predict(xT).dataSync());
   const resid = ys.map((y, i) => y - yPred[i]);
   const σ = Math.sqrt(d3.mean(resid.map(r => r * r)));
 
-  // G) roll‐forward forecast 60 months
   let window = monthly.slice(-WINDOW).map(d => d.value);
   const forecast = [];
   for (let i = 0; i < 60; i++) {
@@ -530,7 +450,6 @@ async function forecastForState(kaggleData, futureState) {
     window.shift();
   }
 
-  // H) draw the historical + forecast ribbon chart
   drawForecast(
     monthly.map((d, i) => ({ t: i + 1, value: d.value })),
     forecast,
@@ -538,37 +457,43 @@ async function forecastForState(kaggleData, futureState) {
   );
 }
 
+/*
+  * drawForecast(histArr, forecastArr, σ):
+  * Renders the forecasted values for the next 60 months.
+  * - `histArr`: the historical data
+  * `forecastArr`: the forecasted data
+  *`σ`: the standard deviation of the residuals
+  * - Draws a line chart with the historical data, forecasted data, and a shaded area for ±1σ
+  * - Adds tooltips for the historical and forecasted data points
+  * - Adds a legend for the historical and forecasted data
+  * - Adds a toggle to show/hide the markers and tooltips
+*/
 function drawForecast(histArr, forecastArr, σ) {
   const w = 800,
         h = 400,
         m = { top: 40, right: 40, bottom: 40, left: 50 };
 
-  // 1) clear out any previous chart
   d3.select("#future-chart").selectAll("*").remove();
 
   const tooltip = d3.select("#tooltip");
   const showTips = d3.select("#future-tooltip-toggle").property("checked");
-  // 2) append new SVG
+
   const svg = d3.select("#future-chart")
     .append("svg")
       .attr("width", w)
       .attr("height", h);
 
-  // 3) build combined array for scale domains
   const all = histArr.concat(forecastArr);
 
-  // 4) x-scale is just the index 1…all.length
   const x = d3.scaleLinear()
     .domain([1, all.length])
     .range([m.left, w - m.right]);
 
-  // 5) y-scale based on min/max temperature
   const y = d3.scaleLinear()
     .domain([0, d3.max(all, d => d.value)])
     .nice()
     .range([h - m.bottom, m.top]);
 
-  // 6) bottom axis: show month index (M1…M(histArr.length), then +1…+60)
   svg.append("g")
   .attr("transform", `translate(0,${h-m.bottom})`)
   .call(d3.axisBottom(x)
@@ -579,30 +504,25 @@ function drawForecast(histArr, forecastArr, σ) {
     .attr("transform","rotate(-45)")
     .style("text-anchor","end");
 
-  // 7) left axis: temperature
   svg.append("g")
     .attr("transform", `translate(${m.left},0)`)
     .call(d3.axisLeft(y).tickFormat(d => d.toFixed(1) + "°F"));
 
-  // 8) ribbon generator for ±1σ around forecast
   const ribbon = d3.area()
     .x(d => x(d.t))
     .y0(d => y(d.value - σ))
     .y1(d => y(d.value + σ));
 
-  // 9) draw ribbon (forecast only)
   svg.append("path")
     .datum(forecastArr)
     .attr("fill", "#d62728")
     .attr("opacity", 0.2)
     .attr("d", ribbon);
 
-  // 10) line generator
   const line = d3.line()
     .x(d => x(d.t))
     .y(d => y(d.value));
 
-  // 11) draw historical line (solid blue)
   svg.append("path")
     .datum(histArr)
     .attr("fill", "none")
@@ -610,7 +530,6 @@ function drawForecast(histArr, forecastArr, σ) {
     .attr("stroke-width", 2)
     .attr("d", line);
 
-  // 12) draw forecast line (dashed red)
   svg.append("path")
     .datum(forecastArr)
     .attr("fill", "none")
@@ -619,11 +538,9 @@ function drawForecast(histArr, forecastArr, σ) {
     .style("stroke-dasharray", "5,5")
     .attr("d", line);
 
-  // 1) create two groups for points/tooltips
   const histPts = svg.append("g").attr("class","marker-group historical");
   const fcstPts = svg.append("g").attr("class","marker-group forecast");
 
-  // 2) draw historical circles
   histPts.selectAll("circle")
     .data(histArr)
     .join("circle")
@@ -643,7 +560,6 @@ function drawForecast(histArr, forecastArr, σ) {
       })
       .on("mouseout", () => d3.select("#tooltip").style("display","none"));
 
-  // 3) draw forecast circles
   fcstPts.selectAll("circle")
     .data(forecastArr)
     .join("circle")
@@ -664,20 +580,16 @@ function drawForecast(histArr, forecastArr, σ) {
       })
       .on("mouseout", () => d3.select("#tooltip").style("display","none"));
 
-  // 4) hook up the toggle checkbox
   d3.select("#future-tooltip-toggle").on("change", function() {
     const show = this.checked;
-    // show/hide both groups
     histPts.style("display", show ? null : "none");
     fcstPts.style("display", show ? null : "none");
   });
 
   const legend = svg.append("g")
     .attr("class","future-legend")
-    // position it inside the top-right margin
     .attr("transform", `translate(${w - m.right - 0},${m.top-20})`);
 
-  // historical
   legend.append("line")
     .attr("x1", 0).attr("y1", 0)
     .attr("x2", 20).attr("y2", 0)
@@ -688,9 +600,7 @@ function drawForecast(histArr, forecastArr, σ) {
     .style("font-size", "12px")
     .text("Historical");
 
-  // forecast
   const fy = 20;
-  // ribbon swatch
   legend.append("rect")
     .attr("x", 0).attr("y", fy-6)
     .attr("width", 20).attr("height", 8)
